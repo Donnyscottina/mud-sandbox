@@ -1,4 +1,8 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { 
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box; 
+}
 
 body { 
   background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%);
@@ -6,6 +10,9 @@ body {
   font-family: 'Courier New', monospace; 
   overflow: hidden;
   font-size: 14px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
 }
 
 #game {
@@ -23,7 +30,7 @@ body {
   border: 2px solid #00ff41;
   border-radius: 8px;
   padding: 15px;
-  box-shadow: 0 0 30px rgba(0, 255, 65, 0.4), inset 0 0 20px rgba(0, 255, 65, 0.1);
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.4), inset 0 0 20px rgba(0, 255, 65, 0.05);
   overflow: auto;
   backdrop-filter: blur(10px);
 }
@@ -32,12 +39,19 @@ body {
   grid-area: map; 
   padding: 5px;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #map { 
   display: block;
-  border: 1px solid rgba(0, 255, 65, 0.3);
+  border: 1px solid rgba(0, 255, 65, 0.5);
   border-radius: 4px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  cursor: crosshair;
 }
 
 #minimap-container {
@@ -46,22 +60,30 @@ body {
   right: 15px;
   border: 2px solid #00ff41;
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.8);
-  box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+  background: rgba(0, 0, 0, 0.9);
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.6);
+  padding: 2px;
 }
 
 #minimap {
   display: block;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
 }
 
 #info { 
   grid-area: info;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
 }
 
-#log-panel { grid-area: log; }
+#log-panel { 
+  grid-area: log;
+  display: flex;
+  flex-direction: column;
+}
 
 #chat-panel { 
   grid-area: chat; 
@@ -75,13 +97,16 @@ h3 {
   text-align: center;
   text-shadow: 0 0 10px #00ff41;
   margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 255, 65, 0.3);
 }
 
 h4 {
   color: #00ff41;
-  font-size: 14px;
+  font-size: 13px;
   margin-bottom: 8px;
   text-shadow: 0 0 5px #00ff41;
+  letter-spacing: 1px;
 }
 
 #stats {
@@ -100,16 +125,17 @@ h4 {
 
 .bar-container {
   flex: 1;
-  height: 12px;
-  background: rgba(0, 0, 0, 0.5);
+  height: 14px;
+  background: rgba(0, 0, 0, 0.6);
   border: 1px solid #00ff41;
   border-radius: 3px;
   overflow: hidden;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
 }
 
 .bar {
   height: 100%;
-  background: #00ff41;
+  background: linear-gradient(90deg, #00ff41 0%, #00cc33 100%);
   transition: width 0.3s ease, background-color 0.3s ease;
   box-shadow: 0 0 10px #00ff41;
 }
@@ -119,51 +145,70 @@ h4 {
   grid-template-columns: repeat(3, 1fr);
   gap: 5px;
   text-align: center;
+  font-size: 13px;
+}
+
+.stat-grid > div {
+  background: rgba(0, 255, 65, 0.05);
+  padding: 4px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 255, 65, 0.2);
 }
 
 #inventory {
   flex: 1;
-  min-height: 100px;
+  min-height: 80px;
+  max-height: 180px;
+  overflow: hidden;
 }
 
 .inv-grid {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  max-height: 150px;
+  max-height: 140px;
   overflow-y: auto;
+  padding-right: 5px;
 }
 
 .inv-item {
-  background: rgba(0, 255, 65, 0.1);
-  padding: 5px 8px;
+  background: rgba(0, 255, 65, 0.08);
+  padding: 6px 10px;
   border-radius: 3px;
   border: 1px solid rgba(0, 255, 65, 0.3);
   display: flex;
   justify-content: space-between;
+  align-items: center;
   transition: all 0.2s;
+  font-size: 12px;
 }
 
 .inv-item:hover {
-  background: rgba(0, 255, 65, 0.2);
+  background: rgba(0, 255, 65, 0.15);
   border-color: #00ff41;
+  transform: translateX(3px);
 }
 
 .count {
   color: #ffaa00;
   font-weight: bold;
+  background: rgba(255, 170, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: 3px;
 }
 
 .empty {
-  color: rgba(0, 255, 65, 0.5);
+  color: rgba(0, 255, 65, 0.4);
   text-align: center;
-  padding: 10px;
+  padding: 15px;
+  font-style: italic;
 }
 
 #crafting {
   background: rgba(0, 20, 10, 0.3);
   padding: 10px;
   border-radius: 4px;
+  border: 1px solid rgba(0, 255, 65, 0.2);
 }
 
 .craft-buttons {
@@ -173,7 +218,7 @@ h4 {
 }
 
 button {
-  background: rgba(10, 14, 26, 0.8);
+  background: linear-gradient(135deg, rgba(10, 14, 26, 0.9) 0%, rgba(20, 24, 36, 0.9) 100%);
   color: #00ff41;
   border: 1px solid #00ff41;
   padding: 8px 10px;
@@ -181,8 +226,25 @@ button {
   border-radius: 4px;
   transition: all 0.2s;
   font-family: 'Courier New', monospace;
-  font-size: 12px;
+  font-size: 11px;
   text-shadow: 0 0 5px #00ff41;
+  position: relative;
+  overflow: hidden;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+button:hover::before {
+  left: 100%;
 }
 
 button:hover {
@@ -194,23 +256,52 @@ button:hover {
 
 button:active {
   transform: translateY(0);
+  box-shadow: 0 0 5px #00ff41;
 }
 
 #legend {
   font-size: 11px;
+  background: rgba(0, 20, 10, 0.2);
+  padding: 8px;
+  border-radius: 4px;
 }
 
 .legend-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 3px;
+  gap: 4px;
+}
+
+.legend-grid > span {
+  padding: 2px 4px;
+  background: rgba(0, 255, 65, 0.05);
+  border-radius: 2px;
 }
 
 #log {
   flex: 1;
   overflow-y: auto;
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.6;
+  padding-right: 5px;
+}
+
+#log > div {
+  margin: 3px 0;
+  padding: 3px 5px;
+  border-left: 2px solid currentColor;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 #chat { 
@@ -218,12 +309,20 @@ button:active {
   overflow-y: auto;
   margin-bottom: 10px;
   font-size: 12px;
+  padding-right: 5px;
 }
 
 .chat-msg {
-  margin: 3px 0;
-  padding: 4px;
+  margin: 4px 0;
+  padding: 5px 8px;
   border-left: 2px solid rgba(0, 255, 65, 0.3);
+  background: rgba(0, 255, 65, 0.03);
+  border-radius: 2px;
+  animation: slideIn 0.3s ease;
+}
+
+.chat-msg:hover {
+  background: rgba(0, 255, 65, 0.08);
 }
 
 .time {
@@ -234,19 +333,21 @@ button:active {
 
 #chat-input {
   width: 100%; 
-  background: rgba(10, 14, 26, 0.8);
+  background: rgba(10, 14, 26, 0.9);
   color: #00ff41; 
   border: 1px solid #00ff41; 
-  padding: 8px;
+  padding: 10px;
   border-radius: 4px;
   font-family: 'Courier New', monospace;
   font-size: 12px;
+  transition: all 0.2s;
 }
 
 #chat-input:focus {
   outline: none;
-  box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
   border-color: #00ff41;
+  background: rgba(10, 14, 26, 1);
 }
 
 #login-screen {
@@ -268,8 +369,12 @@ button:active {
 }
 
 @keyframes glow {
-  from { text-shadow: 0 0 20px #00ff41, 0 0 40px #00ff41; }
-  to { text-shadow: 0 0 30px #00ff41, 0 0 60px #00ff41, 0 0 80px #00ff41; }
+  from { 
+    text-shadow: 0 0 20px #00ff41, 0 0 40px #00ff41; 
+  }
+  to { 
+    text-shadow: 0 0 30px #00ff41, 0 0 60px #00ff41, 0 0 80px #00ff41; 
+  }
 }
 
 .subtitle {
@@ -289,15 +394,17 @@ button:active {
   width: 350px;
   font-family: 'Courier New', monospace;
   box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+  transition: all 0.3s;
 }
 
 #name-input:focus {
   outline: none;
   box-shadow: 0 0 30px rgba(0, 255, 65, 0.6);
+  transform: scale(1.05);
 }
 
 .btn-primary {
-  background: #00ff41;
+  background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
   color: #0a0e1a;
   border: none;
   padding: 15px 40px;
@@ -307,11 +414,16 @@ button:active {
   cursor: pointer;
   box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
   transition: all 0.3s;
+  font-family: 'Courier New', monospace;
 }
 
 .btn-primary:hover {
   box-shadow: 0 0 40px rgba(0, 255, 65, 0.8);
   transform: scale(1.05);
+}
+
+.btn-primary:active {
+  transform: scale(1);
 }
 
 .features {
@@ -323,10 +435,46 @@ button:active {
 
 .features > div {
   background: rgba(0, 255, 65, 0.1);
-  padding: 10px 20px;
+  padding: 12px 20px;
   border: 1px solid rgba(0, 255, 65, 0.3);
   border-radius: 6px;
   text-align: center;
+  transition: all 0.2s;
+}
+
+.features > div:hover {
+  background: rgba(0, 255, 65, 0.15);
+  border-color: #00ff41;
+  transform: translateY(-2px);
+}
+
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(15, 20, 25, 0.95);
+  border: 2px solid #00ff41;
+  padding: 15px 25px;
+  border-radius: 8px;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.6);
+  color: #00ff41;
+  font-weight: bold;
+  font-size: 16px;
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all 0.3s;
+}
+
+.notification.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.notification.success {
+  border-color: #ffff00;
+  color: #ffff00;
+  box-shadow: 0 0 30px rgba(255, 255, 0, 0.6);
 }
 
 .hidden { 
@@ -339,13 +487,25 @@ button:active {
 
 ::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
   background: rgba(0, 255, 65, 0.5);
   border-radius: 4px;
+  transition: background 0.2s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #00ff41;
+}
+
+@media (max-width: 1200px) {
+  #game {
+    grid-template: 
+      "map" 460px
+      "info" auto
+      "log" 200px
+      "chat" 200px / 1fr;
+  }
 }
