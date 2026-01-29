@@ -21,16 +21,12 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Database migration helper
 function migrateDatabase() {
-  // Проверяем существующую схему
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
   
   if (tables.some(t => t.name === 'players')) {
-    // Проверяем колонки
     const columns = db.pragma('table_info(players)');
     
-    // Если старая схема (8 колонок), пересоздаём таблицу
     if (columns.length < 12) {
       console.log('🔄 Обнаружена старая БД, выполняю миграцию...');
       
@@ -56,7 +52,6 @@ function migrateDatabase() {
         );
       `);
       
-      // Копируем данные из старой таблицы
       try {
         db.exec(`
           INSERT INTO players (id, name, x, y, hp, maxhp, inv, level)
@@ -72,7 +67,6 @@ function migrateDatabase() {
   }
 }
 
-// Database setup
 db.exec(`
   CREATE TABLE IF NOT EXISTS players (
     id TEXT PRIMARY KEY, 
@@ -118,10 +112,8 @@ db.exec(`
   );
 `);
 
-// Выполняем миграцию
 migrateDatabase();
 
-// Generate world 100x100 with biomes
 const insertTile = db.prepare('INSERT OR IGNORE INTO world (x, y, terrain) VALUES (?, ?, ?)');
 const worldExists = db.prepare('SELECT COUNT(*) as count FROM world').get();
 
@@ -149,7 +141,6 @@ if (worldExists.count === 0) {
   console.log('✅ Мир создан!');
 }
 
-// NPCs
 const npcExists = db.prepare('SELECT COUNT(*) as count FROM npcs').get();
 if (npcExists.count === 0) {
   const insertNPC = db.prepare('INSERT INTO npcs VALUES (?, ?, ?, ?, ?, ?, ?)');
@@ -162,7 +153,6 @@ if (npcExists.count === 0) {
 const players = new Map();
 const mobs = new Map();
 
-// Helper functions
 const getPlayer = db.prepare('SELECT * FROM players WHERE id = ?');
 const savePlayer = db.prepare(
   'INSERT OR REPLACE INTO players (id, name, x, y, hp, maxhp, inv, level, exp, gold, attack, defense) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
@@ -174,12 +164,10 @@ const saveMob = db.prepare('INSERT OR REPLACE INTO mobs VALUES (?, ?, ?, ?, ?, ?
 const loadMobs = db.prepare('SELECT * FROM mobs');
 const deleteMob = db.prepare('DELETE FROM mobs WHERE id = ?');
 
-// Load mobs from DB
 loadMobs.all().forEach(mob => {
   mobs.set(mob.id, mob);
 });
 
-// Recipes (expanded)
 const RECIPES = {
   house: { wood: 10, stone: 5 },
   sword: { wood: 2, stone: 3 },
@@ -190,7 +178,17 @@ const RECIPES = {
   potion: { herb: 3, water: 1 }
 };
 
-// Mob types
+// Terrain-based resource gathering
+const TERRAIN_RESOURCES = {
+  mountain: ['stone', 'iron', 'gold_ore'],
+  forest: ['wood', 'berry', 'herb'],
+  grass: ['herb', 'flower'],
+  desert: ['cactus', 'sand'],
+  swamp: ['herb', 'water', 'slime_gel'],
+  snow: ['ice', 'snow_crystal'],
+  town: [] // В городе ничего не собирается
+};
+
 const MOB_TYPES = {
   slime: { hp: 30, attack: 5, exp: 20, loot: ['slime_gel', 'slime_gel', 'gold'] },
   goblin: { hp: 50, attack: 10, exp: 40, loot: ['gold', 'gold', 'leather'] },
@@ -199,7 +197,6 @@ const MOB_TYPES = {
   orc: { hp: 100, attack: 20, exp: 100, loot: ['gold', 'iron', 'iron'] }
 };
 
-// Spawn mobs
 function spawnMob(type, x, y) {
   const id = `mob_${Date.now()}_${Math.random()}`;
   const mobData = MOB_TYPES[type];
@@ -216,7 +213,6 @@ function spawnMob(type, x, y) {
   return mob;
 }
 
-// Spawn initial mobs
 if (mobs.size < 20) {
   for (let i = 0; i < 30; i++) {
     const types = ['slime', 'goblin', 'wolf', 'skeleton'];
@@ -228,7 +224,6 @@ if (mobs.size < 20) {
   console.log(`✅ Заспавнено ${mobs.size} мобов`);
 }
 
-// Mob AI - move randomly
 setInterval(() => {
   mobs.forEach(mob => {
     const moves = [[0,1], [0,-1], [1,0], [-1,0]];
@@ -282,17 +277,15 @@ io.on('connection', (socket) => {
     const tile = getTile.get(socket.player.x, socket.player.y);
     if (!tile) return;
     
-    const inv = JSON.parse(socket.player.inv);
-    const items = {
-      mountain: ['stone', 'iron', 'gold_ore'],
-      forest: ['wood', 'berry', 'herb'],
-      grass: ['wood', 'herb'],
-      desert: ['cactus', 'sand'],
-      swamp: ['herb', 'water', 'slime_gel'],
-      snow: ['ice', 'wood']
-    };
+    // Проверяем можно ли собирать ресурсы на этом terrain
+    const possibleItems = TERRAIN_RESOURCES[tile.terrain];
     
-    const possibleItems = items[tile.terrain] || ['wood'];
+    if (!possibleItems || possibleItems.length === 0) {
+      socket.emit('gatherFailed', `Здесь нечего собирать! (${tile.terrain})`);
+      return;
+    }
+    
+    const inv = JSON.parse(socket.player.inv);
     const item = possibleItems[Math.floor(Math.random() * possibleItems.length)];
     
     inv.push(item);

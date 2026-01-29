@@ -5,16 +5,19 @@ let tilesetLoaded = false;
 
 const canvas = document.getElementById('map');
 const ctx = canvas.getContext('2d');
-const TILE_SIZE = 16; // размер отрисовки на экране
-const SPRITE_SIZE = 16; // размер спрайта в тайлсете
-const SPRITE_SPACING = 1; // расстояние между спрайтами
+const TILE_SIZE = 32;
+const SPRITE_SIZE = 16;
+const SPRITE_SPACING = 1;
 
-// Загрузка тайлсета
+// Увеличиваем canvas для нормального отображения 15x15
+canvas.width = 480;  // 15 * 32
+canvas.height = 480; // 15 * 32
+
 const tilesetImg = new Image();
-tilesetImg.src = 'tileset.png'; // используем твой файл
+tilesetImg.src = 'colored.jpg';
 tilesetImg.onload = () => {
   tilesetLoaded = true;
-  console.log('✅ Тайлсет загружен! Размер:', tilesetImg.width, 'x', tilesetImg.height);
+  console.log('✅ Тайлсет загружен!', tilesetImg.width, 'x', tilesetImg.height);
   if (worldData) renderWorld(worldData);
 };
 tilesetImg.onerror = () => {
@@ -22,10 +25,9 @@ tilesetImg.onerror = () => {
   tilesetLoaded = false;
 };
 
-// Твои координаты из спрайтшита (x, y в сетке)
-// Учитываем что между спрайтами 1px
+// Правильные координаты из твоего спрайтшита
 const SPRITES = {
-  // Terrain - первый ряд
+  // Terrain
   grass: [5, 0],
   dirt: [0, 0],
   stone: [1, 16],
@@ -35,18 +37,18 @@ const SPRITES = {
   snow: [19, 1],
   ice: [1, 9],
   
-  forest: [0, 1], // дерево
-  mountain: [4, 18], // гора
-  desert: [3, 0], // песок
-  swamp: [1, 0], // болото
-  town: [6, 19], // город (дом)
+  forest: [0, 1],
+  mountain: [4, 18],
+  desert: [3, 0],
+  swamp: [1, 0],
+  town: [6, 19],
   
   // Player & NPCs
   player: [27, 1],
-  npc: [24,0],
+  npc: [24, 0],
   merchant: [29, 0],
   
-  // Mobs - второй ряд
+  // Mobs
   slime: [27, 8],
   goblin: [26, 9],
   skeleton: [29, 6],
@@ -65,7 +67,6 @@ const SPRITES = {
   pickaxe: [40, 7]
 };
 
-// Fallback цвета
 const TERRAIN_COLORS = {
   grass: '#2a5a2a',
   forest: '#1a4d1a',
@@ -85,7 +86,6 @@ function join() {
   document.getElementById('login-screen').classList.add('hidden');
 }
 
-// Socket events
 socket.on('init', ({ player: p, world }) => {
   player = p;
   worldData = world;
@@ -106,6 +106,10 @@ socket.on('gathered', ({ item, inv }) => {
   player.inv = JSON.stringify(inv);
   updateUI();
   log(`✅ Собрано: ${item}`);
+});
+
+socket.on('gatherFailed', (msg) => {
+  log(`⚠️ ${msg}`, 'error');
 });
 
 socket.on('crafted', ({ item, inv }) => {
@@ -177,7 +181,6 @@ socket.on('chat', ({ name, msg }) => {
   }
 });
 
-// Controls
 let keys = {};
 document.addEventListener('keydown', (e) => {
   const activeEl = document.activeElement;
@@ -286,10 +289,15 @@ function renderWorld(world) {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-  // Render tiles
+  // Render tiles - ИСПРАВЛЕНО: правильная отрисовка для всех направлений
   world.tiles.forEach(tile => {
     const x = (tile.rx + 7) * TILE_SIZE;
     const y = (tile.ry + 7) * TILE_SIZE;
+    
+    // Проверяем что тайл в пределах canvas
+    if (x < -TILE_SIZE || x >= canvas.width || y < -TILE_SIZE || y >= canvas.height) {
+      return;
+    }
     
     if (tilesetLoaded && SPRITES[tile.terrain]) {
       drawSprite(SPRITES[tile.terrain], x, y);
@@ -298,7 +306,6 @@ function renderWorld(world) {
       ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
     }
     
-    // Buildings
     if (tile.building) {
       if (tilesetLoaded && SPRITES[tile.building]) {
         drawSprite(SPRITES[tile.building], x, y);
@@ -324,7 +331,6 @@ function renderWorld(world) {
           ctx.font = 'bold 20px monospace';
           ctx.fillText('👤', x + 6, y + 24);
         }
-        // Quest indicator
         ctx.fillStyle = '#ffff00';
         ctx.font = 'bold 14px monospace';
         ctx.fillText('!', x + 24, y + 12);
@@ -346,7 +352,6 @@ function renderWorld(world) {
           ctx.fillText(emojis[mob.type] || '👾', x + 6, y + 24);
         }
         
-        // HP bar
         const hpPercent = Math.max(0, Math.min(1, mob.hp / mob.maxhp));
         ctx.fillStyle = hpPercent > 0.5 ? '#00ff00' : (hpPercent > 0.25 ? '#ffaa00' : '#ff0000');
         ctx.fillRect(x + 2, y + 2, (TILE_SIZE - 4) * hpPercent, 4);
@@ -371,7 +376,6 @@ function renderWorld(world) {
           ctx.font = 'bold 20px monospace';
           ctx.fillText('👤', x + 6, y + 24);
         }
-        // Name tag
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 11px monospace';
         ctx.strokeStyle = '#000';
@@ -394,23 +398,18 @@ function renderWorld(world) {
     ctx.fillText('@', px + 8, py + 24);
   }
   
-  // Highlight player tile
   ctx.strokeStyle = 'rgba(0, 255, 65, 0.8)';
   ctx.lineWidth = 2;
   ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
   ctx.lineWidth = 1;
   
-  // Minimap
   drawMinimap();
 }
 
-// Правильная функция для вытаскивания спрайтов с учётом 1px отступов
 function drawSprite(spriteCoords, x, y) {
   if (!tilesetLoaded || !spriteCoords) return;
   
   const [gridX, gridY] = spriteCoords;
-  
-  // Формула: позиция = (размер_спрайта + отступ) * индекс
   const sx = gridX * (SPRITE_SIZE + SPRITE_SPACING);
   const sy = gridY * (SPRITE_SIZE + SPRITE_SPACING);
   
@@ -419,8 +418,8 @@ function drawSprite(spriteCoords, x, y) {
   try {
     ctx.drawImage(
       tilesetImg,
-      sx, sy, SPRITE_SIZE, SPRITE_SIZE,  // источник
-      x, y, TILE_SIZE, TILE_SIZE          // назначение
+      sx, sy, SPRITE_SIZE, SPRITE_SIZE,
+      x, y, TILE_SIZE, TILE_SIZE
     );
   } catch (e) {
     console.error('Ошибка отрисовки спрайта:', gridX, gridY, e);
