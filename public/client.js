@@ -1,28 +1,29 @@
 const socket = io();
 let player = null;
-let world = null;
+let worldData = null;
 
 const canvas = document.getElementById('map');
 const ctx = canvas.getContext('2d');
 const TILE_SIZE = 30;
 
 const TERRAIN_COLORS = {
-  grass: '#2a4d2a',
-  forest: '#1a3d1a',
+  grass: '#2a5a2a',
+  forest: '#1a4d1a',
   mountain: '#666',
-  water: '#1e3a5f',
-  desert: '#d4a574',
-  swamp: '#3d5c3d',
+  desert: '#d4a76a',
+  swamp: '#4a6b4a',
   snow: '#e0f0ff',
-  town: '#8b4513'
+  town: '#8b7355'
 };
 
-const MOB_COLORS = {
-  slime: '#0f0',
-  goblin: '#f90',
-  skeleton: '#ccc',
-  wolf: '#888',
-  orc: '#f00'
+const TERRAIN_EMOJI = {
+  grass: '🌱',
+  forest: '🌲',
+  mountain: '⛰️',
+  desert: '🏜️',
+  swamp: '🌿',
+  snow: '❄️',
+  town: '🏘️'
 };
 
 function join() {
@@ -32,43 +33,44 @@ function join() {
   document.getElementById('login-screen').classList.add('hidden');
 }
 
-socket.on('init', (data) => {
-  player = data.player;
-  world = data.world;
+socket.on('init', ({ player: p, world }) => {
+  player = p;
+  worldData = world;
   updateUI();
-  renderWorld();
-  log('Вы вошли в мир!');
+  renderWorld(world);
+  log('Добро пожаловать в MUD Песочницу! 🎮');
+  log('Управление: WASD - движение, E - собрать, клик по мобу - атака');
 });
 
-socket.on('moved', (data) => {
-  player = data.player;
-  world = data.world;
+socket.on('moved', ({ player: p, world }) => {
+  player = p;
+  worldData = world;
   updateUI();
-  renderWorld();
+  renderWorld(world);
 });
 
 socket.on('gathered', ({ item, inv }) => {
   player.inv = JSON.stringify(inv);
   updateUI();
-  log(`Собрано: ${item}`);
+  log(`✅ Собрано: ${item}`);
 });
 
 socket.on('crafted', ({ item, inv }) => {
   player.inv = JSON.stringify(inv);
   updateUI();
-  log(`Создано: ${item}`);
+  log(`🔨 Создано: ${item}`);
 });
 
 socket.on('built', ({ x, y, building }) => {
-  log(`Построено: ${building} на (${x}, ${y})`);
+  log(`🏗️ Построено: ${building} на (${x}, ${y})`);
 });
 
 socket.on('combatLog', (msg) => {
-  log(`⚔️ ${msg}`, '#ff4444');
+  log(`⚔️ ${msg}`, 'combat');
 });
 
 socket.on('levelUp', (level) => {
-  log(`🎉 Уровень повышен! Теперь ${level} уровень!`, '#ffff00');
+  log(`🎉 LEVEL UP! Теперь уровень ${level}!`, 'success');
   playSound('levelup');
 });
 
@@ -78,62 +80,74 @@ socket.on('playerUpdate', (p) => {
 });
 
 socket.on('mobsUpdate', (mobs) => {
-  if (world) {
-    world.mobs = mobs.filter(m => 
+  if (worldData) {
+    worldData.mobs = mobs.filter(m => 
       Math.abs(m.x - player.x) <= 7 && Math.abs(m.y - player.y) <= 7
     );
-    renderWorld();
+    renderWorld(worldData);
   }
 });
 
 socket.on('mobDied', (mobId) => {
-  if (world) {
-    world.mobs = world.mobs.filter(m => m.id !== mobId);
-    renderWorld();
+  if (worldData) {
+    worldData.mobs = worldData.mobs.filter(m => m.id !== mobId);
+    renderWorld(worldData);
   }
 });
 
 socket.on('mobHit', ({ id, hp }) => {
-  if (world) {
-    const mob = world.mobs.find(m => m.id === id);
+  if (worldData) {
+    const mob = worldData.mobs.find(m => m.id === id);
     if (mob) mob.hp = hp;
-    renderWorld();
+    renderWorld(worldData);
   }
 });
 
 socket.on('chat', ({ name, msg }) => {
   const chat = document.getElementById('chat');
-  chat.innerHTML += `<div><b>${name}:</b> ${msg}</div>`;
+  const time = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+  chat.innerHTML += `<div class="chat-msg"><span class="time">${time}</span> <b>${name}:</b> ${msg}</div>`;
   chat.scrollTop = chat.scrollHeight;
 });
 
 // Controls
 document.addEventListener('keydown', (e) => {
+  if (document.activeElement.id === 'chat-input') return;
+  
   const moves = { 
     w: 'north', s: 'south', a: 'west', d: 'east', 
+    W: 'north', S: 'south', A: 'west', D: 'east',
     ArrowUp: 'north', ArrowDown: 'south', ArrowLeft: 'west', ArrowRight: 'east' 
   };
+  
   if (moves[e.key]) {
     e.preventDefault();
     socket.emit('move', moves[e.key]);
   }
+  
   if (e.key === 'e' || e.key === 'E') {
+    e.preventDefault();
     socket.emit('gather');
-  }
-  if (e.key === ' ') {
-    attackNearestMob();
   }
 });
 
 canvas.addEventListener('click', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const x = Math.floor((e.clientX - rect.left) / TILE_SIZE) - 7;
-  const y = Math.floor((e.clientY - rect.top) / TILE_SIZE) - 7;
+  if (!worldData || !player) return;
   
-  if (world && world.mobs) {
-    const mob = world.mobs.find(m => m.x - player.x === x && m.y - player.y === y);
-    if (mob) {
-      socket.emit('attack', mob.id);
+  const rect = canvas.getBoundingClientRect();
+  const clickX = Math.floor((e.clientX - rect.left) / TILE_SIZE) - 7;
+  const clickY = Math.floor((e.clientY - rect.top) / TILE_SIZE) - 7;
+  
+  const clickedMob = worldData.mobs.find(m => 
+    m.x - player.x === clickX && m.y - player.y === clickY
+  );
+  
+  if (clickedMob) {
+    const distance = Math.abs(clickX) + Math.abs(clickY);
+    if (distance <= 2) {
+      socket.emit('attack', clickedMob.id);
+    } else {
+      log('⚠️ Слишком далеко! Подойдите ближе.');
     }
   }
 });
@@ -149,64 +163,55 @@ function craft(item) {
   socket.emit('craft', item);
 }
 
-function buildItem(item) {
-  socket.emit('build', item);
-}
-
-function attackNearestMob() {
-  if (!world || !world.mobs) return;
-  const nearMobs = world.mobs.filter(m => {
-    const dist = Math.abs(m.x - player.x) + Math.abs(m.y - player.y);
-    return dist <= 2;
-  });
-  if (nearMobs.length > 0) {
-    socket.emit('attack', nearMobs[0].id);
-  }
-}
-
 function updateUI() {
   if (!player) return;
+  
   document.getElementById('player-name').textContent = player.name;
   document.getElementById('hp').textContent = player.hp;
   document.getElementById('maxhp').textContent = player.maxhp;
   document.getElementById('level').textContent = player.level;
   document.getElementById('exp').textContent = player.exp;
-  document.getElementById('gold').textContent = player.gold;
+  document.getElementById('gold').textContent = player.gold || 0;
   document.getElementById('attack').textContent = player.attack;
   document.getElementById('defense').textContent = player.defense;
   
-  const hpBar = document.getElementById('hp-bar');
   const hpPercent = (player.hp / player.maxhp) * 100;
-  hpBar.style.width = hpPercent + '%';
-  hpBar.style.backgroundColor = hpPercent > 50 ? '#0f0' : hpPercent > 25 ? '#ff0' : '#f00';
-  
-  const expBar = document.getElementById('exp-bar');
-  const expNeeded = player.level * 100;
-  const expPercent = (player.exp / expNeeded) * 100;
-  expBar.style.width = expPercent + '%';
+  const hpBar = document.getElementById('hp-bar');
+  if (hpBar) {
+    hpBar.style.width = hpPercent + '%';
+    hpBar.style.backgroundColor = hpPercent > 50 ? '#00ff41' : (hpPercent > 25 ? '#ffaa00' : '#ff0000');
+  }
   
   const inv = JSON.parse(player.inv);
   const counts = {};
   inv.forEach(item => counts[item] = (counts[item] || 0) + 1);
+  
   document.getElementById('inv-items').innerHTML = 
-    Object.entries(counts).map(([item, count]) => `${item} x${count}`).join('<br>') || 'Пусто';
+    Object.entries(counts).map(([item, count]) => 
+      `<div class="inv-item">${item} <span class="count">x${count}</span></div>`
+    ).join('') || '<div class="empty">Пусто</div>';
 }
 
-function renderWorld() {
-  if (!world) return;
+function renderWorld(world) {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
+  // Terrain
   world.tiles.forEach(tile => {
     const x = (tile.rx + 7) * TILE_SIZE;
     const y = (tile.ry + 7) * TILE_SIZE;
     ctx.fillStyle = TERRAIN_COLORS[tile.terrain] || '#333';
     ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
     
+    // Grid
+    ctx.strokeStyle = 'rgba(0, 255, 65, 0.1)';
+    ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+    
+    // Buildings
     if (tile.building) {
-      ctx.fillStyle = '#ff0';
-      ctx.font = '20px monospace';
-      ctx.fillText(tile.building[0].toUpperCase(), x + 5, y + 22);
+      ctx.fillStyle = '#ffaa00';
+      ctx.font = '16px monospace';
+      ctx.fillText(tile.building === 'house' ? '🏠' : '⚒️', x + 7, y + 20);
     }
   });
   
@@ -215,11 +220,11 @@ function renderWorld() {
     world.npcs.forEach(npc => {
       const x = (npc.x - player.x + 7) * TILE_SIZE;
       const y = (npc.y - player.y + 7) * TILE_SIZE;
-      ctx.fillStyle = '#00f';
-      ctx.fillRect(x + 5, y + 5, 20, 20);
-      ctx.fillStyle = '#fff';
-      ctx.font = '10px monospace';
-      ctx.fillText('?', x + 12, y + 18);
+      if (x >= 0 && x < 450 && y >= 0 && y < 450) {
+        ctx.fillStyle = '#00aaff';
+        ctx.font = '20px monospace';
+        ctx.fillText('👤', x + 5, y + 22);
+      }
     });
   }
   
@@ -228,15 +233,16 @@ function renderWorld() {
     world.mobs.forEach(mob => {
       const x = (mob.x - player.x + 7) * TILE_SIZE;
       const y = (mob.y - player.y + 7) * TILE_SIZE;
-      ctx.fillStyle = MOB_COLORS[mob.type] || '#f00';
-      ctx.fillRect(x + 7, y + 7, 16, 16);
-      
-      // HP bar
-      const hpPercent = mob.hp / mob.maxhp;
-      ctx.fillStyle = '#f00';
-      ctx.fillRect(x, y - 3, 30, 2);
-      ctx.fillStyle = '#0f0';
-      ctx.fillRect(x, y - 3, 30 * hpPercent, 2);
+      if (x >= 0 && x < 450 && y >= 0 && y < 450) {
+        const emoji = { slime: '💧', goblin: '👺', skeleton: '💀', wolf: '🐺', orc: '👹' }[mob.type] || '👾';
+        ctx.font = '18px monospace';
+        ctx.fillText(emoji, x + 6, y + 20);
+        
+        // HP bar
+        const hpPercent = mob.hp / mob.maxhp;
+        ctx.fillStyle = hpPercent > 0.5 ? '#00ff00' : (hpPercent > 0.25 ? '#ffaa00' : '#ff0000');
+        ctx.fillRect(x + 2, y + 2, (TILE_SIZE - 4) * hpPercent, 3);
+      }
     });
   }
   
@@ -246,22 +252,62 @@ function renderWorld() {
       if (p.id === player.id) return;
       const x = (p.x - player.x + 7) * TILE_SIZE;
       const y = (p.y - player.y + 7) * TILE_SIZE;
-      ctx.fillStyle = '#0ff';
-      ctx.fillRect(x + 10, y + 10, 10, 10);
+      if (x >= 0 && x < 450 && y >= 0 && y < 450) {
+        ctx.fillStyle = '#ffff00';
+        ctx.font = '18px monospace';
+        ctx.fillText('👤', x + 6, y + 20);
+        ctx.fillStyle = '#fff';
+        ctx.font = '10px monospace';
+        ctx.fillText(p.name, x, y - 2);
+      }
     });
   }
   
-  // Player in center
+  // Player (center)
   ctx.fillStyle = '#00ff41';
-  ctx.fillRect(7 * TILE_SIZE + 10, 7 * TILE_SIZE + 10, 10, 10);
+  ctx.font = '20px monospace';
+  ctx.fillText('@', 7 * TILE_SIZE + 10, 7 * TILE_SIZE + 22);
+  
+  // Minimap
+  drawMinimap();
 }
 
-function log(msg, color = '#00ff41') {
-  const logEl = document.getElementById('log');
-  logEl.innerHTML += `<br><span style="color:${color}">> ${msg}</span>`;
-  logEl.scrollTop = logEl.scrollHeight;
+function drawMinimap() {
+  const minimap = document.getElementById('minimap');
+  if (!minimap) return;
+  const mctx = minimap.getContext('2d');
+  const scale = 2;
+  
+  mctx.fillStyle = '#000';
+  mctx.fillRect(0, 0, 200, 200);
+  
+  if (worldData && worldData.tiles) {
+    worldData.tiles.forEach(tile => {
+      const x = (tile.rx + 7) * scale;
+      const y = (tile.ry + 7) * scale;
+      mctx.fillStyle = TERRAIN_COLORS[tile.terrain] || '#333';
+      mctx.fillRect(x, y, scale, scale);
+    });
+  }
+  
+  // Player on minimap
+  mctx.fillStyle = '#00ff41';
+  mctx.fillRect(7 * scale, 7 * scale, scale * 2, scale * 2);
+}
+
+function log(msg, type = 'info') {
+  const log = document.getElementById('log');
+  const time = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+  const color = { info: '#00ff41', combat: '#ff6600', success: '#ffff00', error: '#ff0000' }[type];
+  log.innerHTML += `<div style="color: ${color}"><span class="time">${time}</span> ${msg}</div>`;
+  log.scrollTop = log.scrollHeight;
+  
+  if (log.children.length > 100) {
+    log.removeChild(log.firstChild);
+  }
 }
 
 function playSound(type) {
-  // Placeholder for sound effects
+  // Placeholder for future sound system
+  console.log('🔊', type);
 }

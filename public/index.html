@@ -3,21 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MUD Песочница - RPG Online</title>
+  <title>🎮 MUD Песочница</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="game">
     <div class="panel" id="map-container">
       <canvas id="map" width="450" height="450"></canvas>
-      <div id="minimap-legend">
-        <div><span class="legend-color" style="background:#2a4d2a"></span> Луг</div>
-        <div><span class="legend-color" style="background:#1a3d1a"></span> Лес</div>
-        <div><span class="legend-color" style="background:#666"></span> Горы</div>
-        <div><span class="legend-color" style="background:#d4a574"></span> Пустыня</div>
-        <div><span class="legend-color" style="background:#3d5c3d"></span> Болото</div>
-        <div><span class="legend-color" style="background:#e0f0ff"></span> Снег</div>
-        <div><span class="legend-color" style="background:#8b4513"></span> Город</div>
+      <div id="minimap-container">
+        <canvas id="minimap" width="200" height="200"></canvas>
       </div>
     </div>
     
@@ -28,84 +22,78 @@
         <div class="stat-row">
           <span>HP:</span>
           <div class="bar-container">
-            <div id="hp-bar" class="bar"></div>
+            <div class="bar" id="hp-bar" style="width: 100%"></div>
           </div>
           <span><b id="hp">100</b>/<b id="maxhp">100</b></span>
         </div>
         
-        <div class="stat-row">
-          <span>EXP:</span>
-          <div class="bar-container">
-            <div id="exp-bar" class="bar" style="background:#00f"></div>
-          </div>
-          <span><b id="exp">0</b>/<span id="exp-needed">100</span></span>
-        </div>
-        
         <div class="stat-grid">
           <div>Lvl: <b id="level">1</b></div>
-          <div>💥 Atk: <b id="attack">10</b></div>
-          <div>🛡️ Def: <b id="defense">5</b></div>
-          <div>💰 Gold: <b id="gold">0</b></div>
+          <div>EXP: <b id="exp">0</b></div>
+          <div>💰: <b id="gold">0</b></div>
+          <div>⚔️: <b id="attack">10</b></div>
+          <div>🛡️: <b id="defense">5</b></div>
         </div>
       </div>
       
       <div id="inventory">
-        <h4>🎒 Инвентарь</h4>
-        <div id="inv-items">Пусто</div>
+        <h4>📦 Инвентарь</h4>
+        <div id="inv-items" class="inv-grid">Пусто</div>
       </div>
       
       <div id="crafting">
         <h4>🔨 Крафт</h4>
-        <button onclick="craft('sword')">⚔️ Меч (wood x2, stone x3)</button>
-        <button onclick="craft('iron_sword')">⚔️ Железный меч (iron x5, wood x2)</button>
-        <button onclick="craft('bow')">🏹 Лук (wood x5, string x3)</button>
-        <button onclick="craft('armor')">🛡️ Броня (iron x10, leather x5)</button>
-        <button onclick="craft('potion')">🧪 Зелье (herb x3, water x1)</button>
-        <button onclick="craft('pickaxe')">⛏️ Кирка (wood x1, stone x5)</button>
+        <div class="craft-buttons">
+          <button onclick="craft('sword')" title="wood x2, stone x3">⚔️ Меч</button>
+          <button onclick="craft('pickaxe')" title="wood x1, stone x5">⛏️ Кирка</button>
+          <button onclick="craft('iron_sword')" title="iron x5, wood x2">🗡️ Железный меч</button>
+          <button onclick="craft('armor')" title="iron x10, leather x5">🛡️ Броня</button>
+          <button onclick="craft('bow')" title="wood x5, string x3">🏹 Лук</button>
+          <button onclick="craft('potion')" title="herb x3, water x1">🧪 Зелье</button>
+        </div>
       </div>
       
-      <div id="building">
-        <h4>🏗️ Строительство</h4>
-        <button onclick="buildItem('house')">🏠 Дом (wood x10, stone x5)</button>
-      </div>
-      
-      <div id="controls-help">
-        <h4>⌨️ Управление</h4>
-        <small>
-          WASD/Стрелки - движение<br>
-          E - собрать ресурс<br>
-          Пробел - атака ближайшего моба<br>
-          Клик на моба - атаковать
-        </small>
+      <div id="legend">
+        <h4>📜 Легенда</h4>
+        <div class="legend-grid">
+          <span>🌱 Луг</span>
+          <span>🌲 Лес</span>
+          <span>⛰️ Горы</span>
+          <span>🏜️ Пустыня</span>
+          <span>🌿 Болото</span>
+          <span>❄️ Снега</span>
+          <span>🏘️ Город</span>
+          <span>👤 NPC</span>
+          <span>💧 Слайм</span>
+          <span>👺 Гоблин</span>
+          <span>💀 Скелет</span>
+          <span>🐺 Волк</span>
+        </div>
       </div>
     </div>
     
     <div class="panel" id="log-panel">
-      <h4>📜 Лог событий</h4>
-      <div id="log">Добро пожаловать в MUD песочницу!<br>
-🌍 Мир 100x100, 6 биомов, 5 типов мобов<br>
-⚔️ Убивай мобов, качайся, крафти предметы!</div>
+      <h4>📋 Лог событий</h4>
+      <div id="log"></div>
     </div>
     
     <div class="panel" id="chat-panel">
       <h4>💬 Чат</h4>
       <div id="chat"></div>
-      <input id="chat-input" placeholder="Напишите сообщение...">
+      <input id="chat-input" placeholder="Написать сообщение..." maxlength="200">
     </div>
   </div>
   
   <div id="login-screen">
     <h1>🎮 MUD Песочница</h1>
-    <p class="subtitle">Multiplayer RPG Sandbox</p>
-    <input id="name-input" placeholder="Введите имя персонажа" maxlength="16">
-    <button onclick="join()">Войти в игру</button>
+    <p class="subtitle">Multiplayer браузерная RPG</p>
+    <input id="name-input" placeholder="Введите имя персонажа" maxlength="16" autofocus>
+    <button onclick="join()" class="btn-primary">Войти в мир</button>
     <div class="features">
-      <div>⚔️ Боевая система PvE</div>
-      <div>🌍 6 уникальных биомов</div>
-      <div>👹 5 типов мобов с AI</div>
-      <div>🔨 Расширенная система крафта</div>
-      <div>🎯 Квесты от NPC</div>
-      <div>👥 Multiplayer в реальном времени</div>
+      <div>⚔️ Боевая система</div>
+      <div>🌍 6 биомов</div>
+      <div>🔨 Крафт и строительство</div>
+      <div>👥 Multiplayer</div>
     </div>
   </div>
   
