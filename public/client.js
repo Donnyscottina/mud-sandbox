@@ -5,7 +5,7 @@ let tilesetLoaded = false;
 
 const canvas = document.getElementById('map');
 const ctx = canvas.getContext('2d');
-const TILE_SIZE = 32;
+const TILE_SIZE = 16;
 const SPRITE_SIZE = 16;
 const SPRITE_SPACING = 1;
 
@@ -14,7 +14,7 @@ canvas.width = 480;  // 15 * 32
 canvas.height = 480; // 15 * 32
 
 const tilesetImg = new Image();
-tilesetImg.src = 'colored.jpg';
+tilesetImg.src = 'tileset.png';
 tilesetImg.onload = () => {
   tilesetLoaded = true;
   console.log('✅ Тайлсет загружен!', tilesetImg.width, 'x', tilesetImg.height);
