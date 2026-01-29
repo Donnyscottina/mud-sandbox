@@ -11,7 +11,7 @@ const SPRITE_SIZE = 16; // размер спрайта в тайлсете
 
 // Загрузка тайлсета
 const tilesetImg = new Image();
-tilesetImg.src = 'tileset.png'; // Нужно добавить файл
+tilesetImg.src = 'tileset.png';
 tilesetImg.onload = () => {
   tilesetLoaded = true;
   console.log('✅ Тайлсет загружен!');
@@ -25,40 +25,40 @@ tilesetImg.onerror = () => {
 // Mapping спрайтов в тайлсете (координаты x,y в сетке 16x16)
 const SPRITES = {
   // Terrain
-  grass: [6, 0],
-  forest: [1, 1],
-  mountain: [5, 2],
-  desert: [2, 0],
-  swamp: [0, 0],
-  snow: [20, 1],
-  town: [19, 5],
-  water: [8, 5],
+  grass: [1, 0],
+  forest: [2, 0],
+  mountain: [3, 0],
+  desert: [4, 0],
+  swamp: [5, 0],
+  snow: [6, 0],
+  town: [7, 0],
+  water: [8, 0],
   
   // Player
-  player: [25, 1],
+  player: [0, 1],
   
   // NPCs
-  npc: [28, 1],
-  merchant: [29, 1],
-  blacksmith: [28, 2],
+  npc: [1, 1],
+  merchant: [2, 1],
+  blacksmith: [3, 1],
   
   // Mobs
-  slime: [26, 7],
-  goblin: [27, 0],
-  skeleton: [29, 0],
-  wolf: [28, 8],
-  orc: [28, 8],
+  slime: [0, 2],
+  goblin: [1, 2],
+  skeleton: [2, 2],
+  wolf: [3, 2],
+  orc: [4, 2],
   
   // Buildings
-  house: [0, 21],
-  sword: [35, 3],
-  pickaxe: [36, 3],
+  house: [0, 3],
+  sword: [1, 3],
+  pickaxe: [2, 3],
   
   // Items
-  wood: [1, 0],
-  stone: [5, 2],
-  iron: [5, 2],
-  gold: [5, 2]
+  wood: [0, 4],
+  stone: [1, 4],
+  iron: [2, 4],
+  gold: [3, 4]
 };
 
 // Fallback цвета если тайлсет не загружен
@@ -177,7 +177,11 @@ socket.on('chat', ({ name, msg }) => {
 // Controls
 let keys = {};
 document.addEventListener('keydown', (e) => {
-  if (document.activeElement.id === 'chat-input') return;
+  // ВАЖНО: блокируем WASD если фокус на input или textarea
+  const activeEl = document.activeElement;
+  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+    return; // не обрабатываем WASD в полях ввода
+  }
   
   keys[e.key] = true;
   
@@ -295,9 +299,7 @@ function renderWorld(world) {
       ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
     }
     
-    // Grid
-    ctx.strokeStyle = 'rgba(0, 255, 65, 0.08)';
-    ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+    // Убрал grid - он давал зазоры в 1px
     
     // Buildings
     if (tile.building) {
