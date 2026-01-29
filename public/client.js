@@ -5,13 +5,13 @@ let tilesetLoaded = false;
 
 const canvas = document.getElementById('map');
 const ctx = canvas.getContext('2d');
-const TILE_SIZE = 32; // размер отрисовки на экране
+const TILE_SIZE = 16; // размер отрисовки на экране
 const SPRITE_SIZE = 16; // размер спрайта в тайлсете
 const SPRITE_SPACING = 1; // расстояние между спрайтами
 
 // Загрузка тайлсета
 const tilesetImg = new Image();
-tilesetImg.src = 'colored.jpg'; // используем твой файл
+tilesetImg.src = 'tileset.png'; // используем твой файл
 tilesetImg.onload = () => {
   tilesetLoaded = true;
   console.log('✅ Тайлсет загружен! Размер:', tilesetImg.width, 'x', tilesetImg.height);
