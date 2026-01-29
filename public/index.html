@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MUD Песочница</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game">
+    <div class="panel" id="map-container">
+      <canvas id="map" width="450" height="450"></canvas>
+    </div>
+    <div class="panel" id="info">
+      <h3 id="player-name">Загрузка...</h3>
+      <div id="stats">
+        <span>HP: <b id="hp">100</b>/<b id="maxhp">100</b></span> | 
+        <span>Lvl: <b id="level">1</b></span>
+      </div>
+      <div id="inventory">
+        <h4>Инвентарь:</h4>
+        <div id="inv-items">Пусто</div>
+      </div>
+      <div id="crafting">
+        <h4>Крафт:</h4>
+        <button onclick="craft('house')">🏠 Дом (wood x10, stone x5)</button>
+        <button onclick="craft('sword')">⚔️ Меч (wood x2, stone x3)</button>
+        <button onclick="craft('pickaxe')">⛏️ Кирка (wood x1, stone x5)</button>
+      </div>
+    </div>
+    <div class="panel" id="log-panel">
+      <div id="log">Добро пожаловать в MUD песочницу! WASD/стрелки - движение, E - собрать ресурс</div>
+    </div>
+    <div class="panel" id="chat-panel">
+      <div id="chat"></div>
+      <input id="chat-input" placeholder="Чат...">
+    </div>
+  </div>
+  <div id="login-screen">
+    <h1>🎮 MUD Песочница</h1>
+    <input id="name-input" placeholder="Введите имя" maxlength="16">
+    <button onclick="join()">Войти</button>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>

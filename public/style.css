@@ -1,0 +1,76 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+  background: #0a0e1a; 
+  color: #00ff41; 
+  font-family: 'Courier New', monospace; 
+  overflow: hidden;
+}
+#game {
+  display: grid;
+  grid-template: 
+    "map info" 450px
+    "log chat" 1fr / 1fr 350px;
+  gap: 10px;
+  padding: 10px;
+  height: 100vh;
+}
+.panel {
+  background: #0f1419;
+  border: 2px solid #00ff41;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+  overflow: auto;
+}
+#map-container { grid-area: map; padding: 0; }
+#map { display: block; }
+#info { grid-area: info; }
+#log-panel { grid-area: log; }
+#chat-panel { grid-area: chat; display: flex; flex-direction: column; }
+#chat { flex: 1; overflow-y: auto; margin-bottom: 10px; }
+#chat-input { 
+  width: 100%; 
+  background: #0a0e1a; 
+  color: #00ff41; 
+  border: 1px solid #00ff41; 
+  padding: 8px;
+  border-radius: 4px;
+}
+button {
+  background: #0a0e1a;
+  color: #00ff41;
+  border: 1px solid #00ff41;
+  padding: 8px 12px;
+  margin: 5px 0;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  width: 100%;
+}
+button:hover { background: #00ff41; color: #0a0e1a; }
+#login-screen {
+  position: fixed;
+  inset: 0;
+  background: #0a0e1a;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  z-index: 1000;
+}
+#login-screen h1 { font-size: 3em; text-shadow: 0 0 20px #00ff41; }
+#name-input {
+  background: #0f1419;
+  color: #00ff41;
+  border: 2px solid #00ff41;
+  padding: 15px;
+  font-size: 1.2em;
+  border-radius: 8px;
+  text-align: center;
+  width: 300px;
+}
+#inventory, #crafting { margin-top: 15px; }
+h3, h4 { color: #00ff41; margin-bottom: 10px; }
+#stats { margin: 10px 0; }
+.hidden { display: none !important; }
