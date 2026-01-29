@@ -1,67 +1,71 @@
 const socket = io();
 let player = null;
 let worldData = null;
-let tileset = null;
 let tilesetLoaded = false;
 
 const canvas = document.getElementById('map');
 const ctx = canvas.getContext('2d');
-const TILE_SIZE = 30;
+const TILE_SIZE = 32; // размер отрисовки на экране
 const SPRITE_SIZE = 16; // размер спрайта в тайлсете
+const SPRITE_SPACING = 1; // расстояние между спрайтами
 
 // Загрузка тайлсета
 const tilesetImg = new Image();
-tilesetImg.src = 'tileset.png';
+tilesetImg.src = 'colored.jpg'; // используем твой файл
 tilesetImg.onload = () => {
   tilesetLoaded = true;
-  console.log('✅ Тайлсет загружен!');
+  console.log('✅ Тайлсет загружен! Размер:', tilesetImg.width, 'x', tilesetImg.height);
   if (worldData) renderWorld(worldData);
 };
 tilesetImg.onerror = () => {
-  console.log('⚠️ Тайлсет не найден, используем запасной рендеринг');
+  console.log('⚠️ Тайлсет не найден, используем fallback');
   tilesetLoaded = false;
 };
 
-// Mapping спрайтов в тайлсете (координаты x,y в сетке 16x16)
+// Твои координаты из спрайтшита (x, y в сетке)
+// Учитываем что между спрайтами 1px
 const SPRITES = {
-  // Terrain
-  grass: [1, 0],
-  forest: [2, 0],
-  mountain: [3, 0],
-  desert: [4, 0],
-  swamp: [5, 0],
+  // Terrain - первый ряд
+  grass: [0, 0],
+  dirt: [1, 0],
+  stone: [2, 0],
+  sand: [3, 0],
+  water: [4, 0],
+  lava: [5, 0],
   snow: [6, 0],
-  town: [7, 0],
-  water: [8, 0],
+  ice: [7, 0],
   
-  // Player
+  forest: [10, 0], // дерево
+  mountain: [11, 0], // гора
+  desert: [3, 0], // песок
+  swamp: [12, 0], // болото
+  town: [20, 0], // город (дом)
+  
+  // Player & NPCs
   player: [0, 1],
-  
-  // NPCs
   npc: [1, 1],
   merchant: [2, 1],
-  blacksmith: [3, 1],
   
-  // Mobs
-  slime: [0, 2],
-  goblin: [1, 2],
-  skeleton: [2, 2],
-  wolf: [3, 2],
-  orc: [4, 2],
-  
-  // Buildings
-  house: [0, 3],
-  sword: [1, 3],
-  pickaxe: [2, 3],
+  // Mobs - второй ряд
+  slime: [8, 1],
+  goblin: [9, 1],
+  skeleton: [10, 1],
+  wolf: [11, 1],
+  orc: [12, 1],
   
   // Items
-  wood: [0, 4],
-  stone: [1, 4],
-  iron: [2, 4],
-  gold: [3, 4]
+  wood: [16, 2],
+  stone_item: [17, 2],
+  iron: [18, 2],
+  gold: [19, 2],
+  
+  // Buildings
+  house: [20, 0],
+  sword: [0, 3],
+  pickaxe: [1, 3]
 };
 
-// Fallback цвета если тайлсет не загружен
+// Fallback цвета
 const TERRAIN_COLORS = {
   grass: '#2a5a2a',
   forest: '#1a4d1a',
@@ -168,7 +172,6 @@ socket.on('chat', ({ name, msg }) => {
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
   
-  // Лимит сообщений
   while (chat.children.length > 50) {
     chat.removeChild(chat.firstChild);
   }
@@ -177,10 +180,9 @@ socket.on('chat', ({ name, msg }) => {
 // Controls
 let keys = {};
 document.addEventListener('keydown', (e) => {
-  // ВАЖНО: блокируем WASD если фокус на input или textarea
   const activeEl = document.activeElement;
   if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-    return; // не обрабатываем WASD в полях ввода
+    return;
   }
   
   keys[e.key] = true;
@@ -195,7 +197,7 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     keys._moving = true;
     socket.emit('move', moves[e.key]);
-    setTimeout(() => { keys._moving = false; }, 150); // Защита от спама
+    setTimeout(() => { keys._moving = false; }, 150);
   }
   
   if ((e.key === 'e' || e.key === 'E') && !keys._gathering) {
@@ -254,7 +256,6 @@ function updateUI() {
   document.getElementById('attack').textContent = player.attack;
   document.getElementById('defense').textContent = player.defense;
   
-  // HP bar
   const hpPercent = Math.max(0, Math.min(100, (player.hp / player.maxhp) * 100));
   const hpBar = document.getElementById('hp-bar');
   if (hpBar) {
@@ -264,7 +265,6 @@ function updateUI() {
     else hpBar.style.backgroundColor = '#ff0000';
   }
   
-  // Inventory
   const inv = JSON.parse(player.inv || '[]');
   const counts = {};
   inv.forEach(item => counts[item] = (counts[item] || 0) + 1);
@@ -294,12 +294,9 @@ function renderWorld(world) {
     if (tilesetLoaded && SPRITES[tile.terrain]) {
       drawSprite(SPRITES[tile.terrain], x, y);
     } else {
-      // Fallback
       ctx.fillStyle = TERRAIN_COLORS[tile.terrain] || '#333';
       ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
     }
-    
-    // Убрал grid - он давал зазоры в 1px
     
     // Buildings
     if (tile.building) {
@@ -309,7 +306,7 @@ function renderWorld(world) {
         ctx.fillStyle = '#ffaa00';
         ctx.font = 'bold 16px monospace';
         const icon = tile.building === 'house' ? '🏠' : '⚒️';
-        ctx.fillText(icon, x + 7, y + 20);
+        ctx.fillText(icon, x + 8, y + 22);
       }
     }
   });
@@ -319,18 +316,18 @@ function renderWorld(world) {
     world.npcs.forEach(npc => {
       const x = (npc.x - player.x + 7) * TILE_SIZE;
       const y = (npc.y - player.y + 7) * TILE_SIZE;
-      if (x >= 0 && x < 450 && y >= 0 && y < 450) {
+      if (x >= -TILE_SIZE && x < canvas.width && y >= -TILE_SIZE && y < canvas.height) {
         if (tilesetLoaded && SPRITES.npc) {
           drawSprite(SPRITES.npc, x, y);
         } else {
           ctx.fillStyle = '#00aaff';
           ctx.font = 'bold 20px monospace';
-          ctx.fillText('👤', x + 5, y + 22);
+          ctx.fillText('👤', x + 6, y + 24);
         }
         // Quest indicator
         ctx.fillStyle = '#ffff00';
-        ctx.font = 'bold 12px monospace';
-        ctx.fillText('!', x + 20, y + 10);
+        ctx.font = 'bold 14px monospace';
+        ctx.fillText('!', x + 24, y + 12);
       }
     });
   }
@@ -340,21 +337,22 @@ function renderWorld(world) {
     world.mobs.forEach(mob => {
       const x = (mob.x - player.x + 7) * TILE_SIZE;
       const y = (mob.y - player.y + 7) * TILE_SIZE;
-      if (x >= 0 && x < 450 && y >= 0 && y < 450) {
+      if (x >= -TILE_SIZE && x < canvas.width && y >= -TILE_SIZE && y < canvas.height) {
         if (tilesetLoaded && SPRITES[mob.type]) {
           drawSprite(SPRITES[mob.type], x, y);
         } else {
           const emojis = { slime: '💧', goblin: '👺', skeleton: '💀', wolf: '🐺', orc: '👹' };
-          ctx.font = '18px monospace';
-          ctx.fillText(emojis[mob.type] || '👾', x + 6, y + 20);
+          ctx.font = '20px monospace';
+          ctx.fillText(emojis[mob.type] || '👾', x + 6, y + 24);
         }
         
         // HP bar
         const hpPercent = Math.max(0, Math.min(1, mob.hp / mob.maxhp));
         ctx.fillStyle = hpPercent > 0.5 ? '#00ff00' : (hpPercent > 0.25 ? '#ffaa00' : '#ff0000');
-        ctx.fillRect(x + 2, y + 2, (TILE_SIZE - 4) * hpPercent, 3);
+        ctx.fillRect(x + 2, y + 2, (TILE_SIZE - 4) * hpPercent, 4);
         ctx.strokeStyle = '#000';
-        ctx.strokeRect(x + 2, y + 2, TILE_SIZE - 4, 3);
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 2, y + 2, TILE_SIZE - 4, 4);
       }
     });
   }
@@ -365,21 +363,22 @@ function renderWorld(world) {
       if (p.id === player.id) return;
       const x = (p.x - player.x + 7) * TILE_SIZE;
       const y = (p.y - player.y + 7) * TILE_SIZE;
-      if (x >= 0 && x < 450 && y >= 0 && y < 450) {
+      if (x >= -TILE_SIZE && x < canvas.width && y >= -TILE_SIZE && y < canvas.height) {
         if (tilesetLoaded && SPRITES.player) {
           drawSprite(SPRITES.player, x, y);
         } else {
           ctx.fillStyle = '#ffff00';
-          ctx.font = 'bold 18px monospace';
-          ctx.fillText('👤', x + 6, y + 20);
+          ctx.font = 'bold 20px monospace';
+          ctx.fillText('👤', x + 6, y + 24);
         }
         // Name tag
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 10px monospace';
+        ctx.font = 'bold 11px monospace';
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 3;
-        ctx.strokeText(p.name, x - 5, y - 2);
-        ctx.fillText(p.name, x - 5, y - 2);
+        ctx.strokeText(p.name, x, y - 4);
+        ctx.fillText(p.name, x, y - 4);
+        ctx.lineWidth = 1;
       }
     });
   }
@@ -391,12 +390,12 @@ function renderWorld(world) {
     drawSprite(SPRITES.player, px, py);
   } else {
     ctx.fillStyle = '#00ff41';
-    ctx.font = 'bold 22px monospace';
-    ctx.fillText('@', px + 8, py + 22);
+    ctx.font = 'bold 24px monospace';
+    ctx.fillText('@', px + 8, py + 24);
   }
   
   // Highlight player tile
-  ctx.strokeStyle = 'rgba(0, 255, 65, 0.6)';
+  ctx.strokeStyle = 'rgba(0, 255, 65, 0.8)';
   ctx.lineWidth = 2;
   ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
   ctx.lineWidth = 1;
@@ -405,15 +404,27 @@ function renderWorld(world) {
   drawMinimap();
 }
 
+// Правильная функция для вытаскивания спрайтов с учётом 1px отступов
 function drawSprite(spriteCoords, x, y) {
-  if (!tilesetLoaded) return;
-  const [sx, sy] = spriteCoords;
+  if (!tilesetLoaded || !spriteCoords) return;
+  
+  const [gridX, gridY] = spriteCoords;
+  
+  // Формула: позиция = (размер_спрайта + отступ) * индекс
+  const sx = gridX * (SPRITE_SIZE + SPRITE_SPACING);
+  const sy = gridY * (SPRITE_SIZE + SPRITE_SPACING);
+  
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(
-    tilesetImg,
-    sx * SPRITE_SIZE, sy * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE,
-    x, y, TILE_SIZE, TILE_SIZE
-  );
+  
+  try {
+    ctx.drawImage(
+      tilesetImg,
+      sx, sy, SPRITE_SIZE, SPRITE_SIZE,  // источник
+      x, y, TILE_SIZE, TILE_SIZE          // назначение
+    );
+  } catch (e) {
+    console.error('Ошибка отрисовки спрайта:', gridX, gridY, e);
+  }
 }
 
 function drawMinimap() {
@@ -433,7 +444,6 @@ function drawMinimap() {
     mctx.fillRect(x, y, scale, scale);
   });
   
-  // Mobs on minimap
   if (worldData.mobs) {
     worldData.mobs.forEach(mob => {
       const x = (mob.x - player.x + 7) * scale;
@@ -445,7 +455,6 @@ function drawMinimap() {
     });
   }
   
-  // Player on minimap (bigger)
   mctx.fillStyle = '#00ff41';
   mctx.fillRect(7 * scale - 1, 7 * scale - 1, scale * 2 + 2, scale * 2 + 2);
   mctx.strokeStyle = '#fff';
@@ -468,7 +477,6 @@ function log(msg, type = 'info') {
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
   
-  // Лимит логов
   while (log.children.length > 100) {
     log.removeChild(log.firstChild);
   }
@@ -480,10 +488,7 @@ function showNotification(text, type = 'info') {
   notif.textContent = text;
   document.body.appendChild(notif);
   
-  setTimeout(() => {
-    notif.classList.add('show');
-  }, 10);
-  
+  setTimeout(() => notif.classList.add('show'), 10);
   setTimeout(() => {
     notif.classList.remove('show');
     setTimeout(() => notif.remove(), 300);
@@ -496,9 +501,6 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Auto-save reminder
 setInterval(() => {
-  if (player) {
-    console.log('💾 Автосохранение...');
-  }
+  if (player) console.log('💾 Автосохранение...');
 }, 60000);
