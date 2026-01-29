@@ -3,44 +3,112 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MUD Песочница</title>
+  <title>MUD Песочница - RPG Online</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="game">
     <div class="panel" id="map-container">
       <canvas id="map" width="450" height="450"></canvas>
+      <div id="minimap-legend">
+        <div><span class="legend-color" style="background:#2a4d2a"></span> Луг</div>
+        <div><span class="legend-color" style="background:#1a3d1a"></span> Лес</div>
+        <div><span class="legend-color" style="background:#666"></span> Горы</div>
+        <div><span class="legend-color" style="background:#d4a574"></span> Пустыня</div>
+        <div><span class="legend-color" style="background:#3d5c3d"></span> Болото</div>
+        <div><span class="legend-color" style="background:#e0f0ff"></span> Снег</div>
+        <div><span class="legend-color" style="background:#8b4513"></span> Город</div>
+      </div>
     </div>
+    
     <div class="panel" id="info">
       <h3 id="player-name">Загрузка...</h3>
+      
       <div id="stats">
-        <span>HP: <b id="hp">100</b>/<b id="maxhp">100</b></span> | 
-        <span>Lvl: <b id="level">1</b></span>
+        <div class="stat-row">
+          <span>HP:</span>
+          <div class="bar-container">
+            <div id="hp-bar" class="bar"></div>
+          </div>
+          <span><b id="hp">100</b>/<b id="maxhp">100</b></span>
+        </div>
+        
+        <div class="stat-row">
+          <span>EXP:</span>
+          <div class="bar-container">
+            <div id="exp-bar" class="bar" style="background:#00f"></div>
+          </div>
+          <span><b id="exp">0</b>/<span id="exp-needed">100</span></span>
+        </div>
+        
+        <div class="stat-grid">
+          <div>Lvl: <b id="level">1</b></div>
+          <div>💥 Atk: <b id="attack">10</b></div>
+          <div>🛡️ Def: <b id="defense">5</b></div>
+          <div>💰 Gold: <b id="gold">0</b></div>
+        </div>
       </div>
+      
       <div id="inventory">
-        <h4>Инвентарь:</h4>
+        <h4>🎒 Инвентарь</h4>
         <div id="inv-items">Пусто</div>
       </div>
+      
       <div id="crafting">
-        <h4>Крафт:</h4>
-        <button onclick="craft('house')">🏠 Дом (wood x10, stone x5)</button>
+        <h4>🔨 Крафт</h4>
         <button onclick="craft('sword')">⚔️ Меч (wood x2, stone x3)</button>
+        <button onclick="craft('iron_sword')">⚔️ Железный меч (iron x5, wood x2)</button>
+        <button onclick="craft('bow')">🏹 Лук (wood x5, string x3)</button>
+        <button onclick="craft('armor')">🛡️ Броня (iron x10, leather x5)</button>
+        <button onclick="craft('potion')">🧪 Зелье (herb x3, water x1)</button>
         <button onclick="craft('pickaxe')">⛏️ Кирка (wood x1, stone x5)</button>
       </div>
+      
+      <div id="building">
+        <h4>🏗️ Строительство</h4>
+        <button onclick="buildItem('house')">🏠 Дом (wood x10, stone x5)</button>
+      </div>
+      
+      <div id="controls-help">
+        <h4>⌨️ Управление</h4>
+        <small>
+          WASD/Стрелки - движение<br>
+          E - собрать ресурс<br>
+          Пробел - атака ближайшего моба<br>
+          Клик на моба - атаковать
+        </small>
+      </div>
     </div>
+    
     <div class="panel" id="log-panel">
-      <div id="log">Добро пожаловать в MUD песочницу! WASD/стрелки - движение, E - собрать ресурс</div>
+      <h4>📜 Лог событий</h4>
+      <div id="log">Добро пожаловать в MUD песочницу!<br>
+🌍 Мир 100x100, 6 биомов, 5 типов мобов<br>
+⚔️ Убивай мобов, качайся, крафти предметы!</div>
     </div>
+    
     <div class="panel" id="chat-panel">
+      <h4>💬 Чат</h4>
       <div id="chat"></div>
-      <input id="chat-input" placeholder="Чат...">
+      <input id="chat-input" placeholder="Напишите сообщение...">
     </div>
   </div>
+  
   <div id="login-screen">
     <h1>🎮 MUD Песочница</h1>
-    <input id="name-input" placeholder="Введите имя" maxlength="16">
-    <button onclick="join()">Войти</button>
+    <p class="subtitle">Multiplayer RPG Sandbox</p>
+    <input id="name-input" placeholder="Введите имя персонажа" maxlength="16">
+    <button onclick="join()">Войти в игру</button>
+    <div class="features">
+      <div>⚔️ Боевая система PvE</div>
+      <div>🌍 6 уникальных биомов</div>
+      <div>👹 5 типов мобов с AI</div>
+      <div>🔨 Расширенная система крафта</div>
+      <div>🎯 Квесты от NPC</div>
+      <div>👥 Multiplayer в реальном времени</div>
+    </div>
   </div>
+  
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
 </body>
