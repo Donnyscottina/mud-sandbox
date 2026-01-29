@@ -26,43 +26,43 @@ tilesetImg.onerror = () => {
 // Учитываем что между спрайтами 1px
 const SPRITES = {
   // Terrain - первый ряд
-  grass: [0, 0],
-  dirt: [1, 0],
-  stone: [2, 0],
-  sand: [3, 0],
-  water: [4, 0],
-  lava: [5, 0],
-  snow: [6, 0],
-  ice: [7, 0],
+  grass: [5, 0],
+  dirt: [0, 0],
+  stone: [1, 16],
+  sand: [1, 0],
+  water: [8, 5],
+  lava: [12, 18],
+  snow: [19, 1],
+  ice: [1, 9],
   
-  forest: [10, 0], // дерево
-  mountain: [11, 0], // гора
+  forest: [0, 1], // дерево
+  mountain: [4, 18], // гора
   desert: [3, 0], // песок
-  swamp: [12, 0], // болото
-  town: [20, 0], // город (дом)
+  swamp: [1, 0], // болото
+  town: [6, 19], // город (дом)
   
   // Player & NPCs
-  player: [0, 1],
-  npc: [1, 1],
-  merchant: [2, 1],
+  player: [27, 1],
+  npc: [24,0],
+  merchant: [29, 0],
   
   // Mobs - второй ряд
-  slime: [8, 1],
-  goblin: [9, 1],
-  skeleton: [10, 1],
-  wolf: [11, 1],
-  orc: [12, 1],
+  slime: [27, 8],
+  goblin: [26, 9],
+  skeleton: [29, 6],
+  wolf: [31, 7],
+  orc: [25, 9],
   
   // Items
-  wood: [16, 2],
-  stone_item: [17, 2],
-  iron: [18, 2],
-  gold: [19, 2],
+  wood: [44, 19],
+  stone_item: [40, 19],
+  iron: [43, 18],
+  gold: [41, 18],
   
   // Buildings
-  house: [20, 0],
-  sword: [0, 3],
-  pickaxe: [1, 3]
+  house: [0, 20],
+  sword: [32, 7],
+  pickaxe: [40, 7]
 };
 
 // Fallback цвета
