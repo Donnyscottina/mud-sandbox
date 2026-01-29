@@ -21,27 +21,105 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Database migration helper
+function migrateDatabase() {
+  // Проверяем существующую схему
+  const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+  
+  if (tables.some(t => t.name === 'players')) {
+    // Проверяем колонки
+    const columns = db.pragma('table_info(players)');
+    
+    // Если старая схема (8 колонок), пересоздаём таблицу
+    if (columns.length < 12) {
+      console.log('🔄 Обнаружена старая БД, выполняю миграцию...');
+      
+      db.exec(`
+        DROP TABLE IF EXISTS players_old;
+        ALTER TABLE players RENAME TO players_old;
+      `);
+      
+      db.exec(`
+        CREATE TABLE players (
+          id TEXT PRIMARY KEY, 
+          name TEXT, 
+          x INT DEFAULT 25, 
+          y INT DEFAULT 25,
+          hp INT DEFAULT 100, 
+          maxhp INT DEFAULT 100, 
+          inv TEXT DEFAULT '[]', 
+          level INT DEFAULT 1, 
+          exp INT DEFAULT 0, 
+          gold INT DEFAULT 0,
+          attack INT DEFAULT 10, 
+          defense INT DEFAULT 5
+        );
+      `);
+      
+      // Копируем данные из старой таблицы
+      try {
+        db.exec(`
+          INSERT INTO players (id, name, x, y, hp, maxhp, inv, level)
+          SELECT id, name, x, y, hp, maxhp, inv, level FROM players_old;
+        `);
+        db.exec('DROP TABLE players_old;');
+        console.log('✅ Миграция завершена!');
+      } catch (e) {
+        console.log('⚠️ Миграция данных пропущена, используем новую схему');
+        db.exec('DROP TABLE IF EXISTS players_old;');
+      }
+    }
+  }
+}
+
 // Database setup
 db.exec(`
   CREATE TABLE IF NOT EXISTS players (
-    id TEXT PRIMARY KEY, name TEXT, x INT DEFAULT 25, y INT DEFAULT 25,
-    hp INT DEFAULT 100, maxhp INT DEFAULT 100, inv TEXT DEFAULT '[]', 
-    level INT DEFAULT 1, exp INT DEFAULT 0, gold INT DEFAULT 0,
-    attack INT DEFAULT 10, defense INT DEFAULT 5
+    id TEXT PRIMARY KEY, 
+    name TEXT, 
+    x INT DEFAULT 25, 
+    y INT DEFAULT 25,
+    hp INT DEFAULT 100, 
+    maxhp INT DEFAULT 100, 
+    inv TEXT DEFAULT '[]', 
+    level INT DEFAULT 1, 
+    exp INT DEFAULT 0, 
+    gold INT DEFAULT 0,
+    attack INT DEFAULT 10, 
+    defense INT DEFAULT 5
   );
   CREATE TABLE IF NOT EXISTS world (
-    x INT, y INT, terrain TEXT DEFAULT 'grass', building TEXT, items TEXT DEFAULT '[]',
+    x INT, 
+    y INT, 
+    terrain TEXT DEFAULT 'grass', 
+    building TEXT, 
+    items TEXT DEFAULT '[]',
     PRIMARY KEY (x, y)
   );
   CREATE TABLE IF NOT EXISTS npcs (
-    id INT PRIMARY KEY, name TEXT, x INT, y INT, quest TEXT, dialog TEXT, 
+    id INT PRIMARY KEY, 
+    name TEXT, 
+    x INT, 
+    y INT, 
+    quest TEXT, 
+    dialog TEXT, 
     questReward TEXT DEFAULT '{"exp":50,"gold":10}'
   );
   CREATE TABLE IF NOT EXISTS mobs (
-    id TEXT PRIMARY KEY, type TEXT, x INT, y INT, hp INT, maxhp INT, 
-    attack INT, exp INT, loot TEXT
+    id TEXT PRIMARY KEY, 
+    type TEXT, 
+    x INT, 
+    y INT, 
+    hp INT, 
+    maxhp INT, 
+    attack INT, 
+    exp INT, 
+    loot TEXT
   );
 `);
+
+// Выполняем миграцию
+migrateDatabase();
 
 // Generate world 100x100 with biomes
 const insertTile = db.prepare('INSERT OR IGNORE INTO world (x, y, terrain) VALUES (?, ?, ?)');
@@ -87,7 +165,7 @@ const mobs = new Map();
 // Helper functions
 const getPlayer = db.prepare('SELECT * FROM players WHERE id = ?');
 const savePlayer = db.prepare(
-  'INSERT OR REPLACE INTO players VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  'INSERT OR REPLACE INTO players (id, name, x, y, hp, maxhp, inv, level, exp, gold, attack, defense) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
 );
 const getTile = db.prepare('SELECT * FROM world WHERE x = ? AND y = ?');
 const updateTile = db.prepare('UPDATE world SET building = ? WHERE x = ? AND y = ?');
